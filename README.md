@@ -1,6 +1,6 @@
 # SkillMiner
 
-This is the SKillMiner for a generic extraction of skills. It wraps spacy.
+SkillMiner is used for a generic extraction of skills. It wraps spacy and PhraseMatcher.
 
 ## Input 
 
