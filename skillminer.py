@@ -7,18 +7,32 @@ from optparse import OptionParser
 from datetime import datetime
 import pickle
 
+# option parser
+
 parser = OptionParser()
 parser.add_option("-t", "--terminologies", dest="terminologies",default="", action="store", type="string", help="A list of terminologies", metavar="terminologies")
 parser.add_option("-p", "--path", dest="path",default="", action="store", type="string", help="The path for terminologies", metavar="path")
 args = parser.parse_args()
+parser.add_option("-l", "--log-file", dest="logfile", default="pipeline.log", action="store", type="string", help="The logfile", metavar="logfile")
+parser.add_option("-d", "--debug",
+                  action="store_true", dest="debug", default=False,
+                  help="Debug mode")      
+                  
 
 (options, args) = parser.parse_args()
 
+# Logging
+
+ll = logging.INFO
+if options.debug:
+  ll = logging.DEBUG
+logging.basicConfig(filename=options.logfile, encoding='utf-8', level=ll)
+
+logging.info( "===== skillminer =======")
+
+
 terminologies = str(options.terminologies).split(",")
 path = str(options.path)
-
-print ("===== skillminer =======", file=sys.stderr)
-
 
 nlp = spacy.load("de_core_news_sm")
 #path = os.getcwd()+"/"
@@ -35,12 +49,12 @@ cas = load_cas_from_xmi(c, typesystem=load_dkpro_core_typesystem())
 # Get Token type
 Token = typesystem.get_type("de.tudarmstadt.ukp.dkpro.core.api.ner.type.NamedEntity")
 # Create Spacy doc
-print ("Building doc-object", file=sys.stderr)
+logging.info("Building doc-object")
 doc = nlp(cas.sofa_string)
-print ("Loading terminologies ... ", file=sys.stderr)
+logging.info("Loading terminologies ... ")
 tokens = []
 for t in terminologies:
-    print (path+t, file=sys.stderr)
+    logging.info(path+t)
     loaded_matcher = pickle.load(open(path+t+".map", 'rb'))
     loaded_vocab = pickle.load(open(path+t+"-v.map", 'rb'))
     matches = loaded_matcher(doc)
@@ -48,7 +62,7 @@ for t in terminologies:
         try:
             mapid = loaded_vocab[match_id]
         except:
-            print ("Error, no entry for id "+str(match_id), file=sys.stderr)
+            logging.debug("Error, no entry for id "+str(match_id))
             mapid = str(match_id)+"error"
         span = doc[start : end]
         span_char_start = span[0].idx
@@ -62,5 +76,7 @@ for t in terminologies:
 
 for t in tokens:
     cas.add(t)
+
+logging.info("===== skillminer ende =======")
     
 print (cas.to_xmi())
